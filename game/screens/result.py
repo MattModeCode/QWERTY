@@ -75,8 +75,6 @@ class ResultScreen:
         elif rank == 'S': rank_col = (200, 255, 0)
         
 
-        
-        # rank_f = pygame.font.Font(None, 200) <--- Cached
         rank_s = self.rank_font.render(rank, True, rank_col)
         
         # Ensure single blit

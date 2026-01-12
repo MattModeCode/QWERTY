@@ -465,7 +465,11 @@ class GameplayScreen:
 
     def _draw_lanes(self, surface):
         for i in range(NUM_LANES):
-            x = PLAYFIELD_X + i * (LANE_WIDTH + LANE_SPACING)
+            if i <= 3:
+                x = PLAYFIELD_X + i * (LANE_WIDTH + LANE_SPACING) - 25
+            else:
+                x = PLAYFIELD_X + i * (LANE_WIDTH + LANE_SPACING) + 25
+
             if self.hit_flash[i] > 0:
                 s = pygame.Surface((LANE_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
                 s.fill((*NEON_BLUE, 30))
@@ -481,7 +485,10 @@ class GameplayScreen:
 
     def _draw_notes(self, surface):
         for note in self.active_notes:
-            lane_x = PLAYFIELD_X + note.lane * (LANE_WIDTH + LANE_SPACING) + LANE_WIDTH // 2
+            if note.lane <= 3:
+                lane_x = PLAYFIELD_X + note.lane * (LANE_WIDTH + LANE_SPACING) + LANE_WIDTH // 2 - 25
+            else:
+                lane_x = PLAYFIELD_X + note.lane * (LANE_WIDTH + LANE_SPACING) + LANE_WIDTH // 2 + 25
             note.draw(surface, lane_x)
 
     def _draw_hud(self, surface):

@@ -1,4 +1,5 @@
 import pygame
+import os
 from game.map_manager import MapManager
 import game.settings as settings
 from game.settings import (
@@ -8,9 +9,6 @@ from game.settings import (
 from game.ui import Button, Panel, draw_grid_background
 from game.data_manager import DataManager
 from game.visuals import create_neon_text, draw_star
-import threading
-import io
-import urllib.request
 from game.audio_manager import audio_manager
 
 class SongSelectScreen:
@@ -43,7 +41,6 @@ class SongSelectScreen:
         self.preview_panel = Panel(600, 100, 400, 550)
         
         self.image_cache = {}
-        self.fetching_images = set()
         
         self.current_preview = None
     
@@ -115,28 +112,26 @@ class SongSelectScreen:
         self.selected_index = min(self.selected_index, max(0, len(self.maps) - 1))
         self._play_preview()
 
-    def _fetch_image(self, song_title):
-        seed = song_title.replace(" ", "")
-        if seed in self.image_cache or seed in self.fetching_images:
-            return
-            
-        self.fetching_images.add(seed)
+    def _load_image(self, song_title):
+        """Load an image from assets/images based on song title."""
+        if song_title in self.image_cache:
+            return self.image_cache[song_title]
         
-        def fetch():
-            # Lorem Picsum seed url
-            url = f"https://picsum.photos/seed/{seed}/360/200"
-            with urllib.request.urlopen(url, timeout=5) as response:
-                data = response.read()
-                
-            image_file = io.BytesIO(data)
-            image = pygame.image.load(image_file)
-            self.image_cache[seed] = image
-
-            if seed in self.fetching_images:
-                self.fetching_images.remove(seed)
+        # Check for common image extensions
+        base_path = os.path.join("assets", "images", song_title)
+        path = base_path + ".jpg"
+        if os.path.exists(path):
+            try:
+                img = pygame.image.load(path)
+                img = pygame.transform.scale(img, (360, 200))
+                self.image_cache[song_title] = img
+                return img
+            except pygame.error:
+                pass
         
-        t = threading.Thread(target=fetch, daemon=True)
-        t.start()
+        # No image found
+        self.image_cache[song_title] = None
+        return None
 
     def draw(self, surface):
         surface.fill(SLATE_NAVY)
@@ -193,24 +188,15 @@ class SongSelectScreen:
         art_rect = pygame.Rect(px + 20, py + 20, 360, 200)
         pygame.draw.rect(surface, DARK_SLATE, art_rect)
         
-        # Image logic with seed = title
-        seed = map_info["title"].replace(" ", "")
-        if seed in self.image_cache:
-            img = self.image_cache[seed]
-            if img.get_size() != (360, 200):
-                 img = pygame.transform.scale(img, (360, 200))
-                 self.image_cache[seed] = img
+        # Load image from local assets
+        img = self._load_image(map_info["title"])
+        if img:
             surface.blit(img, art_rect)
             pygame.draw.rect(surface, NEON_BLUE, art_rect, 2)
         else:
-            self._fetch_image(map_info["title"])
             pygame.draw.rect(surface, NEON_BLUE, art_rect, 2)
-            if seed in self.fetching_images:
-                 loading_txt = self.detail_font.render("Loading...", True, GRAY)
-                 surface.blit(loading_txt, loading_txt.get_rect(center=art_rect.center))
-            else:
-                 art_t = self.title_font.render(map_info["title"][0], True, (*NEON_BLUE, 50))
-                 surface.blit(art_t, art_t.get_rect(center=art_rect.center))
+            no_img_txt = self.detail_font.render("No Image", True, GRAY)
+            surface.blit(no_img_txt, no_img_txt.get_rect(center=art_rect.center))
 
         # Info
         info_y = py + 240
