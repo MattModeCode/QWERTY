@@ -1,0 +1,5 @@
+pygame==2.6.1
+librosa==0.11.0
+numpy==2.0.2
+pillow==12.1.0
+soundfile==0.13.1
